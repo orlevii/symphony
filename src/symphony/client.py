@@ -41,14 +41,17 @@ class Client:
 @click.option('--port', default=7777)
 @click.option('--tracks', default=1)
 def cli(tracks, **kwargs):
-    ps = []
-    for _ in range(tracks):
-        p = mp.Process(target=lambda: Client(**kwargs).run())
-        p.start()
-        ps.append(p)
+    if tracks == 1:
+        Client(**kwargs).run()
+    else:
+        ps = []
+        for _ in range(tracks):
+            p = mp.Process(target=lambda: Client(**kwargs).run())
+            p.start()
+            ps.append(p)
 
-    for p in ps:
-        p.join()
+        for p in ps:
+            p.join()
 
 
 def main():
