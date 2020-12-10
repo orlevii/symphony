@@ -49,6 +49,13 @@ class Client:
         t3_b = TimeUtil.timestamp_to_bytes(t3_dt.timestamp())
         self.sock.send(t3_b)
 
+        play_time_b = self.sock.recv(8)
+        play_time_ts = TimeUtil.timestamp_from_bytes(play_time_b)
+        play_time_dt = datetime.fromtimestamp(play_time_ts)
+
+        now = datetime.utcnow()
+        sleep_time = (play_time_dt - now).total_seconds()
+        sleep(sleep_time)
 
 
 @click.command()
