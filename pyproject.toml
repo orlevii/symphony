@@ -8,6 +8,7 @@ authors = ["Your Name <orlevi128@gmail.com>"]
 python = "^3.6"
 pygame = "^2.0.0"
 click = "^7.1.2"
+ntplib = "^0.3.4"
 
 [tool.poetry.dev-dependencies]
 

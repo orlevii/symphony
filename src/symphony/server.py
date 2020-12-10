@@ -1,5 +1,7 @@
+import multiprocessing as mp
 import os
 import socket
+import sys
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -28,12 +30,11 @@ class Server:
             print('Something is wrong!')
 
         print('-----' * 10)
-        print('Playing in 20s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=20)
+        print('Playing in 10s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=10)
         print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
-            print('-----' * 10)
             sleep(0.1)
         self.sock.close()
 
@@ -67,26 +68,7 @@ class Server:
 
     @staticmethod
     def sync_client(c: socket.socket, play_time: datetime):
-        ip = c.getpeername()[0]
-        fis = []
-        for i in range(10):
-            c.send(b'S')
-            t0 = TimeUtil.timestamp_from_bytes(c.recv(8))
-            t1 = datetime.utcnow().timestamp()
-            t2 = datetime.utcnow().timestamp()
-            c.send(TimeUtil.timestamp_to_bytes(t2))
-            t3 = TimeUtil.timestamp_from_bytes(c.recv(8))
-
-            fi = ((t1 - t0) + (t2 - t3)) / 2
-            fis.append(fi)
-            round_trip_delay = (t3 - t0) - (t2 - t1)
-            # print(f'[{ip}] - round trip delay: {round_trip_delay}')
-            print(f'[{ip}] - clock time diff: {fi * 1000}ms')
-
         c.send(b'R')
-        fi = min(fis, key=lambda f: abs(f))
-        print(f'[{ip}] - MIN clock time diff: {fi * 1000}ms')
-        play_time = play_time + timedelta(seconds=-fi)
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
 
 
@@ -95,13 +77,22 @@ class Server:
 @click.option('--port', default=7777)
 @click.option('--midi-path', default='./midi')
 def cli(**kwargs):
+    p = mp.Process(target=ntp_server, kwargs=kwargs)
     s = Server(**kwargs)
     try:
+        p.start()
         s.run()
         print('done')
+        sys.exit(0)
     finally:
+        p.terminate()
         for c in s.clients:
             c.close()
+
+
+def ntp_server(host, port, **_):
+    from .ntp.server import run
+    run(host=host, port=port)
 
 
 def main():

@@ -1,10 +1,12 @@
 import multiprocessing as mp
 import socket
+import sys
 from datetime import datetime
 from io import BytesIO
 from time import sleep
 
 import click
+import ntplib
 import pygame
 
 from .util import TimeUtil
@@ -39,29 +41,29 @@ class Client:
             sleep(1)
 
     def sync(self):
-        s = self.sock.recv(1)
-        while s == b'S':
-            t1_dt = datetime.utcnow()
-            t1_b = TimeUtil.timestamp_to_bytes(t1_dt.timestamp())
-            self.sock.send(t1_b)
-            self.sock.recv(8)
+        ntp_client = ntplib.NTPClient()
+        resp = ntp_client.request(host=self.host,
+                                  port=self.port,
+                                  version=3)
+        offset = resp.offset
+        print(f'Clock offset: {offset}')
 
-            t3_dt = datetime.utcnow()
-            t3_b = TimeUtil.timestamp_to_bytes(t3_dt.timestamp())
-            self.sock.send(t3_b)
-            s = self.sock.recv(1)
+        self.sock.recv(1)
+        play_time_bytes = self.sock.recv(8)
+        play_time_ts = TimeUtil.timestamp_from_bytes(play_time_bytes)
 
-        play_time_b = self.sock.recv(8)
-        play_time_ts = TimeUtil.timestamp_from_bytes(play_time_b)
-
-        print(f'expected play time: {play_time_ts}')
-        play_time_dt = datetime.fromtimestamp(play_time_ts)
+        expected_play_time = play_time_ts - offset
+        print(f'Expected play time: {expected_play_time}')
 
         now = datetime.utcnow()
         print(f'now: {now.timestamp()}')
-        sleep_time = (play_time_dt - now).total_seconds()
+        sleep_time = expected_play_time - now.timestamp()
         print(f'sleeping for {sleep_time}seconds')
-        sleep(sleep_time)
+        if sleep_time <= 0:
+            print('????')
+            sys.exit(-1)
+        else:
+            sleep(sleep_time)
 
 
 @click.command()
