@@ -83,7 +83,7 @@ class Server:
             print(f'[{ip}] - clock time diff: {fi * 1000}ms')
 
         c.send(b'R')
-        fi = min(fis)
+        fi = min(fis, key=lambda f: abs(f))
         print(f'[{ip}] - MIN clock time diff: {fi * 1000}ms')
         play_time = play_time + timedelta(seconds=-fi)
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
@@ -98,8 +98,9 @@ def cli(**kwargs):
     try:
         s.run()
         print('done')
-    except:
-        s.sock.close()
+    finally:
+        for c in s.clients:
+            c.close()
 
 
 def main():

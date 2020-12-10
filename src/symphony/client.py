@@ -70,16 +70,21 @@ class Client:
 @click.option('--tracks', default=1)
 def cli(tracks, **kwargs):
     if tracks == 1:
-        Client(**kwargs).run()
+        c(kwargs)
     else:
         ps = []
         for _ in range(tracks):
-            p = mp.Process(target=lambda: Client(**kwargs).run())
+            p = mp.Process(target=c,
+                           args=(kwargs,))
             p.start()
             ps.append(p)
 
         for p in ps:
             p.join()
+
+
+def c(kwargs):
+    Client(**kwargs).run()
 
 
 def main():
