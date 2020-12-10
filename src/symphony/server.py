@@ -1,7 +1,7 @@
 import os
 import socket
-import threading
 from datetime import datetime, timedelta
+from time import sleep
 
 import click
 
@@ -28,12 +28,13 @@ class Server:
             print('Something is wrong!')
 
         print('-----' * 10)
-        print('Playing in 10s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=10)
+        print('Playing in 20s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=20)
         print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
             print('-----' * 10)
+            sleep(0.1)
         self.sock.close()
 
     def receive_connections(self):
@@ -41,8 +42,8 @@ class Server:
             client, addr = self.sock.accept()
             self.clients.append(client)
             print('Connected by', addr)
-            threading.Thread(target=self.handle_client,
-                             args=[client, f]).run()
+            self.handle_client(client, f)
+            sleep(0.1)
 
     def handle_client(self, client: socket.socket, data: bytes):
         length = len(data)
