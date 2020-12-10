@@ -39,15 +39,17 @@ class Client:
             sleep(1)
 
     def sync(self):
-        self.sock.recv(1)
-        t1_dt = datetime.utcnow()
-        t1_b = TimeUtil.timestamp_to_bytes(t1_dt.timestamp())
-        self.sock.send(t1_b)
-        self.sock.recv(8)
+        s = self.sock.recv(1)
+        while s == b'S':
+            t1_dt = datetime.utcnow()
+            t1_b = TimeUtil.timestamp_to_bytes(t1_dt.timestamp())
+            self.sock.send(t1_b)
+            self.sock.recv(8)
 
-        t3_dt = datetime.utcnow()
-        t3_b = TimeUtil.timestamp_to_bytes(t3_dt.timestamp())
-        self.sock.send(t3_b)
+            t3_dt = datetime.utcnow()
+            t3_b = TimeUtil.timestamp_to_bytes(t3_dt.timestamp())
+            self.sock.send(t3_b)
+            s = self.sock.recv(1)
 
         play_time_b = self.sock.recv(8)
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_b)

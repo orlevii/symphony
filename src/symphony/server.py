@@ -33,6 +33,7 @@ class Server:
         print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
+            print('-----' * 10)
         self.sock.close()
 
     def receive_connections(self):
@@ -65,15 +66,25 @@ class Server:
 
     @staticmethod
     def sync_client(c: socket.socket, play_time: datetime):
-        c.send(b'S')
-        t0 = TimeUtil.timestamp_from_bytes(c.recv(8))
-        t1 = datetime.utcnow().timestamp()
-        t2 = datetime.utcnow().timestamp()
-        c.send(TimeUtil.timestamp_to_bytes(t2))
-        t3 = TimeUtil.timestamp_from_bytes(c.recv(8))
+        ip = c.getpeername()[0]
+        fis = []
+        for i in range(10):
+            c.send(b'S')
+            t0 = TimeUtil.timestamp_from_bytes(c.recv(8))
+            t1 = datetime.utcnow().timestamp()
+            t2 = datetime.utcnow().timestamp()
+            c.send(TimeUtil.timestamp_to_bytes(t2))
+            t3 = TimeUtil.timestamp_from_bytes(c.recv(8))
 
-        fi = ((t1 - t0) + (t2 - t3)) / 2
-        print(f'[{c.getpeername()[0]}] - clock time diff: {fi * 1000}ms')
+            fi = ((t1 - t0) + (t2 - t3)) / 2
+            fis.append(fi)
+            round_trip_delay = (t3 - t0) - (t2 - t1)
+            # print(f'[{ip}] - round trip delay: {round_trip_delay}')
+            print(f'[{ip}] - clock time diff: {fi * 1000}ms')
+
+        c.send(b'R')
+        fi = min(fis)
+        print(f'[{ip}] - MIN clock time diff: {fi * 1000}ms')
         play_time = play_time + timedelta(seconds=-fi)
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
 
@@ -83,8 +94,12 @@ class Server:
 @click.option('--port', default=7777)
 @click.option('--midi-path', default='./midi')
 def cli(**kwargs):
-    Server(**kwargs).run()
-    print('done')
+    s = Server(**kwargs)
+    try:
+        s.run()
+        print('done')
+    except:
+        s.sock.close()
 
 
 def main():
