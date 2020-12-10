@@ -60,7 +60,7 @@ class Server:
         file_names = [f for f in os.listdir(self.midi_path) if f.endswith('.mid')]
         print(f'Loading {len(file_names)} midi files...')
         for f_name in file_names:
-            path = os.path.join('./midi', f_name)
+            path = os.path.join(self.midi_path, f_name)
             with open(path, 'rb') as f:
                 self.files.append(f.read())
 
