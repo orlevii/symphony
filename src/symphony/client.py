@@ -39,21 +39,27 @@ class Client:
 
     def sync(self):
         times = []
+        sleep_times_bytes = []
 
-        last_sleep_time_bytes = None
         for i in range(10):
             before = datetime.utcnow()
-            last_sleep_time_bytes = self.sock.recv(4)
+            sleep_times_bytes.append(self.sock.recv(4))
             after = datetime.utcnow()
             times.append((after - before).total_seconds())
 
-        times.sort()
-        network_percentile = times[4]
-        print(f'network ~{network_percentile * 1000}ms')
-        sleep_time = struct.unpack('>f', last_sleep_time_bytes)[0]
-        sleep_time -= network_percentile
-        print(f'waiting {sleep_time} seconds to start playing')
-        sleep(sleep_time)
+        sleep_times = [struct.unpack('>f', t)[0] for t in sleep_times_bytes]
+        last_sleep_time = sleep_times[-1]
+
+        diff_times = []
+        for i in range(len(sleep_times) - 1):
+            diff_times.append(sleep_times[i] - sleep_times[i + 1])
+
+        print(diff_times)
+
+        total_sleep_time = last_sleep_time - diff_times[-1]
+
+        print(f'waiting {total_sleep_time} seconds to start playing')
+        sleep(total_sleep_time)
 
 
 @click.command()

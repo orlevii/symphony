@@ -3,6 +3,7 @@ import socket
 import struct
 import threading
 from datetime import datetime, timedelta
+from time import sleep
 
 import click
 
@@ -26,14 +27,15 @@ class Server:
         if self.ready_count != len(self.files):
             print('Something is wrong!')
 
-        print('Playing in 10s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=10)
+        print('Playing in 15s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=15)
         for c in self.clients:
             for _ in range(10):
                 now = datetime.utcnow()
                 sleep_time = (play_time - now).total_seconds()
                 sleep_time_bytes = struct.pack('>f', sleep_time)
                 c.send(sleep_time_bytes)
+                sleep(0.250)
         self.sock.close()
 
     def receive_connections(self):
