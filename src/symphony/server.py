@@ -72,7 +72,7 @@ class Server:
 
         fi = ((t1 - t0) + (t2 - t3)) / 2
         print(f'clock time diff: {fi * 1000}ms')
-        play_time = play_time + timedelta(seconds=-fi)
+        play_time = play_time + timedelta(seconds=fi)
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
 
 
