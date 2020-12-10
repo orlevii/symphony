@@ -1,11 +1,11 @@
 import os
 import socket
-import struct
 import threading
 from datetime import datetime, timedelta
-from time import sleep
 
 import click
+
+from .util import TimeUtil
 
 
 class Server:
@@ -30,12 +30,7 @@ class Server:
         print('Playing in 15s, syncing clients...')
         play_time = datetime.utcnow() + timedelta(seconds=15)
         for c in self.clients:
-            for _ in range(10):
-                now = datetime.utcnow()
-                sleep_time = (play_time - now).total_seconds()
-                sleep_time_bytes = struct.pack('>f', sleep_time)
-                c.send(sleep_time_bytes)
-                sleep(0.250)
+            self.sync_client(c, play_time)
         self.sock.close()
 
     def receive_connections(self):
@@ -65,6 +60,18 @@ class Server:
             path = os.path.join('./midi', f_name)
             with open(path, 'rb') as f:
                 self.files.append(f.read())
+
+    @staticmethod
+    def sync_client(c: socket.socket, play_time: datetime):
+        c.send(b'S')
+        t0 = TimeUtil.timestamp_from_bytes(c.recv(8))
+        t1 = datetime.utcnow().timestamp()
+        t2 = datetime.utcnow().timestamp()
+        c.send(TimeUtil.timestamp_to_bytes(t2))
+        t3 = TimeUtil.timestamp_from_bytes(c.recv(8))
+
+        fi = ((t1 - t0) + (t2 - t3)) / 2
+        print(f'time diff: {fi * 1000}ms')
 
 
 @click.command()

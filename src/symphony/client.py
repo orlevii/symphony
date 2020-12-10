@@ -1,12 +1,13 @@
 import multiprocessing as mp
 import socket
-import struct
 from datetime import datetime
 from io import BytesIO
 from time import sleep
 
 import click
 import pygame
+
+from .util import TimeUtil
 
 
 class Client:
@@ -38,31 +39,16 @@ class Client:
             sleep(1)
 
     def sync(self):
-        times = []
-        sleep_times_bytes = []
+        self.sock.recv(1)
+        t1_dt = datetime.utcnow()
+        t1_b = TimeUtil.timestamp_to_bytes(t1_dt.timestamp())
+        self.sock.send(t1_b)
+        self.sock.recv(8)
 
-        for i in range(10):
-            before = datetime.utcnow()
-            sleep_times_bytes.append(self.sock.recv(4))
-            after = datetime.utcnow()
-            times.append((after - before).total_seconds())
+        t3_dt = datetime.utcnow()
+        t3_b = TimeUtil.timestamp_to_bytes(t3_dt.timestamp())
+        self.sock.send(t3_b)
 
-        sleep_times = [struct.unpack('>f', t)[0] for t in sleep_times_bytes]
-        last_sleep_time = sleep_times[-1]
-
-        diff_times = []
-        for i in range(len(sleep_times) - 1):
-            diff_times.append(sleep_times[i] - sleep_times[i + 1])
-
-        print('Times:')
-        print(times)
-        print('Diffs:')
-        print(diff_times)
-
-        total_sleep_time = last_sleep_time - diff_times[-1] - times[-1]
-
-        print(f'waiting {total_sleep_time} seconds to start playing')
-        sleep(total_sleep_time)
 
 
 @click.command()
