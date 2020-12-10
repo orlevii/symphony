@@ -51,10 +51,14 @@ class Client:
 
         play_time_b = self.sock.recv(8)
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_b)
+
+        print(f'expected play time: {play_time_ts}')
         play_time_dt = datetime.fromtimestamp(play_time_ts)
 
         now = datetime.utcnow()
+        print(f'now: {now.timestamp()}')
         sleep_time = (play_time_dt - now).total_seconds()
+        print(f'sleeping for {sleep_time}seconds')
         sleep(sleep_time)
 
 

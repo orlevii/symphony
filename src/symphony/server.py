@@ -27,8 +27,10 @@ class Server:
         if self.ready_count != len(self.files):
             print('Something is wrong!')
 
+        print('-----' * 10)
         print('Playing in 10s, syncing clients...')
         play_time = datetime.utcnow() + timedelta(seconds=10)
+        print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
         self.sock.close()
@@ -71,8 +73,8 @@ class Server:
         t3 = TimeUtil.timestamp_from_bytes(c.recv(8))
 
         fi = ((t1 - t0) + (t2 - t3)) / 2
-        print(f'clock time diff: {fi * 1000}ms')
-        play_time = play_time + timedelta(seconds=fi)
+        print(f'[{c.getpeername()[0]}] - clock time diff: {fi * 1000}ms')
+        play_time = play_time + timedelta(seconds=-fi)
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
 
 
