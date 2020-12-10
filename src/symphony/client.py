@@ -54,6 +54,9 @@ class Client:
         for i in range(len(sleep_times) - 1):
             diff_times.append(sleep_times[i] - sleep_times[i + 1])
 
+        print('Times:')
+        print(times)
+        print('Diffs:')
         print(diff_times)
 
         total_sleep_time = last_sleep_time - diff_times[-1]
