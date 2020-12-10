@@ -37,12 +37,12 @@ class Client:
 
         self.sync()
 
-        try:
-            pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy():
-                sleep(1)
-        except Exception as e:
-            print(f'Could not play {file_name}... {e}')
+        # pygame.mixer.music.play()
+        for i in range(30):
+            print(i)
+            sleep(1)
+        while pygame.mixer.music.get_busy():
+            sleep(1)
 
     def sync(self):
         ntp_client = ntplib.NTPClient()
