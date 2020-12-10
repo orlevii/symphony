@@ -59,7 +59,7 @@ class Client:
         print('Diffs:')
         print(diff_times)
 
-        total_sleep_time = last_sleep_time - diff_times[-1]
+        total_sleep_time = last_sleep_time - diff_times[-1] - times[-1]
 
         print(f'waiting {total_sleep_time} seconds to start playing')
         sleep(total_sleep_time)
