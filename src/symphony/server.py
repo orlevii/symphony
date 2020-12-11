@@ -30,12 +30,12 @@ class Server:
             print('Something is wrong!')
 
         print('-----' * 10)
-        print('Playing in 10s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=10)
+        print('Playing in 15s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=15)
         print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
-            sleep(0.1)
+            sleep(0.25)
         self.sock.close()
 
     def receive_connections(self):
@@ -44,7 +44,7 @@ class Server:
             self.clients.append(client)
             print('Connected by', addr)
             self.handle_client(client, f)
-            sleep(0.1)
+            sleep(0.25)
 
     def handle_client(self, client: socket.socket, data: bytes):
         length = len(data)
