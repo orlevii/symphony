@@ -72,10 +72,14 @@ class Server:
 
     @staticmethod
     def sync_client(c: socket.socket, play_time: datetime):
+        peer_name = f'{c.getpeername()[0]}:{c.getpeername()[1]}'
         c.sendall(b'R')
         c.sendall(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
-        while c.recv(1) != b'R':
-            pass
+        print(f'Syncing client {peer_name}. Waiting..')
+        b = c.recv(1)
+        while b != b'R':
+            b = c.recv(1)
+        print(f'Done syncing client {peer_name}')
 
 
 @click.command()
