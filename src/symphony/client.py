@@ -57,6 +57,7 @@ class Client:
 
         play_time_bytes = self.sock.recv(8)
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_bytes)
+        self.sock.send(b'R')
 
         expected_play_time = play_time_ts - offset
         print(f'Expected play time: {expected_play_time}')

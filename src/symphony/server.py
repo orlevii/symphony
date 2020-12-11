@@ -34,6 +34,8 @@ class Server:
         print('Playing in 15s, syncing clients...')
         play_time = datetime.utcnow() + timedelta(seconds=15)
         print(f'expected play time: {play_time.timestamp()}')
+
+        print(f'clients to sync: {len(self.clients)}')
         for c in self.clients:
             self.sync_client(c, play_time)
             sleep(0.1)
@@ -72,6 +74,8 @@ class Server:
     def sync_client(c: socket.socket, play_time: datetime):
         c.send(b'R')
         c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
+        while c.recv(1) != b'R':
+            pass
 
 
 @click.command()
