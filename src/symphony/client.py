@@ -48,8 +48,10 @@ class Client:
         offset = resp.offset
         print(f'Clock offset: {offset}')
 
-        self.sock.recv(1)
-        sleep(0.25)
+        ch = self.sock.recv(1)
+        while ch != b'R':
+            self.sock.recv(1)
+
         play_time_bytes = self.sock.recv(8)
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_bytes)
 

@@ -28,6 +28,7 @@ class Server:
         self.receive_connections()
         if self.ready_count != len(self.files):
             print('Something is wrong!')
+            sys.exit(-1)
 
         print('-----' * 10)
         print('Playing in 15s, syncing clients...')
