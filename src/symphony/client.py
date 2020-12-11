@@ -9,6 +9,7 @@ import click
 import ntplib
 import pygame
 
+from ._socket_wrapper import SocketWrapper
 from .util import TimeUtil
 
 
@@ -16,25 +17,21 @@ class Client:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client = SocketWrapper(sock)
         pygame.mixer.init()
         pygame.mixer.music.set_volume(0.8)
 
     def run(self):
-        self.sock.connect((self.host, self.port))
-        print('connected')
-        b = self.sock.recv(1)
-        while b != b'M':
-            b = self.sock.recv(1)
-        payload_size_bytes = self.sock.recv(4)
-        payload_size = int.from_bytes(payload_size_bytes, 'big')
-        midi_data = self.sock.recv(payload_size)
+        self.client.sock.connect((self.host, self.port))
+        print('Connected')
+        midi_data = self.client.recv_message()
         print(f'Got {len(midi_data)} bytes')
 
         midi_stream = BytesIO(midi_data)
         pygame.mixer.music.load(midi_stream)
 
-        self.sock.sendall(b'R')
+        self.client.send_message(b'READY')
         print('READY!')
 
         self.sync()
@@ -51,13 +48,9 @@ class Client:
         offset = resp.offset
         print(f'Clock offset: {offset}')
 
-        ch = self.sock.recv(1)
-        while ch != b'R':
-            self.sock.recv(1)
-
-        play_time_bytes = self.sock.recv(8)
+        play_time_bytes = self.client.recv_message()
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_bytes)
-        self.sock.sendall(b'R')
+        self.client.send_message(b'OK')
 
         expected_play_time = play_time_ts - offset
         print(f'Expected play time: {expected_play_time}')

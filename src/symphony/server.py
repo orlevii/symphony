@@ -3,10 +3,10 @@ import os
 import socket
 import sys
 from datetime import datetime, timedelta
-from time import sleep
 
 import click
 
+from ._socket_wrapper import SocketWrapper
 from .util import TimeUtil
 
 
@@ -14,8 +14,9 @@ class Server:
     def __init__(self, host, port, midi_path):
         self.host = host
         self.port = port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind((host, port))
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind((host, port))
+        self.server = SocketWrapper(sock)
         self.midi_path = midi_path
         self.clients = []
         self.files = []
@@ -23,7 +24,7 @@ class Server:
 
     def run(self):
         self.load_files()
-        self.sock.listen()
+        self.server.sock.listen()
         print(f'Server listening on: {self.host}:{self.port}')
         self.receive_connections()
         if self.ready_count != len(self.files):
@@ -31,34 +32,28 @@ class Server:
             sys.exit(-1)
 
         print('-----' * 10)
-        print('Playing in 15s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=15)
+        print('Playing in 10s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=10)
         print(f'expected play time: {play_time.timestamp()}')
 
         print(f'clients to sync: {len(self.clients)}')
         for c in self.clients:
             self.sync_client(c, play_time)
-            sleep(0.1)
-        self.sock.close()
+        self.server.close()
 
     def receive_connections(self):
         for i, f in enumerate(self.files, 1):
-            client, addr = self.sock.accept()
+            client_sock, addr = self.server.sock.accept()
+            client = SocketWrapper(client_sock)
             self.clients.append(client)
             print('Connected by', addr)
             self.handle_client(client, f)
-            sleep(0.25)
 
-    def handle_client(self, client: socket.socket, data: bytes):
-        client.sendall(b'M')
-        length = len(data)
-        print(f'sending {length} bytes to client {client.getpeername()}')
-        client.sendall(length.to_bytes(4, 'big'))
-        client.sendall(data)
-
-        ready = client.recv(1)
-        if ready == b'R':
-            print(f'Client {client.getpeername()} is ready')
+    def handle_client(self, client: SocketWrapper, data: bytes):
+        client.send_message(data)
+        ready = client.recv_message()
+        if ready == b'READY':
+            print(f'Client {client.sock.getpeername()} is ready')
             self.ready_count += 1
 
     def load_files(self):
@@ -71,14 +66,19 @@ class Server:
                 self.files.append(f.read())
 
     @staticmethod
-    def sync_client(c: socket.socket, play_time: datetime):
-        peer_name = f'{c.getpeername()[0]}:{c.getpeername()[1]}'
-        c.sendall(b'R')
-        c.sendall(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
+    def sync_client(c: SocketWrapper, play_time: datetime):
+        pn = c.sock.getpeername()
+        peer_name = f'{pn[0]}:{pn[1]}'
+
+        play_time_bytes = TimeUtil.timestamp_to_bytes(play_time.timestamp())
+        c.send_message(play_time_bytes)
+
         print(f'Syncing client {peer_name}. Waiting..')
-        b = c.recv(1)
-        while b != b'R':
-            b = c.recv(1)
+        msg = c.recv_message()
+        if msg != b'OK':
+            print(f'client sent {msg}. ???')
+            sys.exit(-1)
+
         print(f'Done syncing client {peer_name}')
 
 
