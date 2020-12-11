@@ -11,7 +11,7 @@ from .util import TimeUtil
 
 
 class Server:
-    def __init__(self, host, port, midi_path):
+    def __init__(self, host, port, midi_path, sync_time):
         self.host = host
         self.port = port
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,8 +19,9 @@ class Server:
         self.server = SocketWrapper(sock)
         self.midi_path = midi_path
         self.clients = []
-        self.files = []
+        self.files = {}
         self.ready_count = 0
+        self.sync_time = sync_time
 
     def run(self):
         self.load_files()
@@ -32,8 +33,8 @@ class Server:
             sys.exit(-1)
 
         print('-----' * 10)
-        print('Playing in 10s, syncing clients...')
-        play_time = datetime.utcnow() + timedelta(seconds=10)
+        print(f'Playing in {self.sync_time}s, syncing clients...')
+        play_time = datetime.utcnow() + timedelta(seconds=self.sync_time)
         print(f'expected play time: {play_time.timestamp()}')
 
         print(f'clients to sync: {len(self.clients)}')
@@ -42,14 +43,15 @@ class Server:
         self.server.close()
 
     def receive_connections(self):
-        for i, f in enumerate(self.files, 1):
+        for f_name, data in self.files.items():
             client_sock, addr = self.server.sock.accept()
             client = SocketWrapper(client_sock)
             self.clients.append(client)
             print('Connected by', addr)
-            self.handle_client(client, f)
+            self.handle_client(client, f_name, data)
 
-    def handle_client(self, client: SocketWrapper, data: bytes):
+    def handle_client(self, client: SocketWrapper, file_name: str, data: bytes):
+        client.send_message(file_name.encode('utf-8'))
         client.send_message(data)
         ready = client.recv_message()
         if ready == b'READY':
@@ -63,7 +65,7 @@ class Server:
         for f_name in file_names:
             path = os.path.join(self.midi_path, f_name)
             with open(path, 'rb') as f:
-                self.files.append(f.read())
+                self.files[f_name] = f.read()
 
     @staticmethod
     def sync_client(c: SocketWrapper, play_time: datetime):
@@ -86,6 +88,7 @@ class Server:
 @click.option('--host', default='0.0.0.0')
 @click.option('--port', default=7777)
 @click.option('--midi-path', default='./midi')
+@click.option('--sync-time', default=5)
 def cli(**kwargs):
     p = mp.Process(target=ntp_server, kwargs=kwargs)
     s = Server(**kwargs)

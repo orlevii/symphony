@@ -25,6 +25,7 @@ class Client:
     def run(self):
         self.client.sock.connect((self.host, self.port))
         print('Connected')
+        file_name = self.client.recv_message().decode('utf-8')
         midi_data = self.client.recv_message()
         print(f'Got {len(midi_data)} bytes')
 
@@ -36,9 +37,12 @@ class Client:
 
         self.sync()
 
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            sleep(1)
+        try:
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+                sleep(1)
+        except Exception as e:
+            print(f'Could not play {file_name}... {e}')
 
     def sync(self):
         ntp_client = ntplib.NTPClient()
