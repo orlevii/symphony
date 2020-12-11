@@ -34,7 +34,7 @@ class Client:
         midi_stream = BytesIO(midi_data)
         pygame.mixer.music.load(midi_stream)
 
-        self.sock.send(b'R')
+        self.sock.sendall(b'R')
         print('READY!')
 
         self.sync()
@@ -57,7 +57,7 @@ class Client:
 
         play_time_bytes = self.sock.recv(8)
         play_time_ts = TimeUtil.timestamp_from_bytes(play_time_bytes)
-        self.sock.send(b'R')
+        self.sock.sendall(b'R')
 
         expected_play_time = play_time_ts - offset
         print(f'Expected play time: {expected_play_time}')

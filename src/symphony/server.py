@@ -50,11 +50,11 @@ class Server:
             sleep(0.25)
 
     def handle_client(self, client: socket.socket, data: bytes):
-        client.send(b'M')
+        client.sendall(b'M')
         length = len(data)
         print(f'sending {length} bytes to client {client.getpeername()}')
-        client.send(length.to_bytes(4, 'big'))
-        client.send(data)
+        client.sendall(length.to_bytes(4, 'big'))
+        client.sendall(data)
 
         ready = client.recv(1)
         if ready == b'R':
@@ -72,8 +72,8 @@ class Server:
 
     @staticmethod
     def sync_client(c: socket.socket, play_time: datetime):
-        c.send(b'R')
-        c.send(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
+        c.sendall(b'R')
+        c.sendall(TimeUtil.timestamp_to_bytes(play_time.timestamp()))
         while c.recv(1) != b'R':
             pass
 
