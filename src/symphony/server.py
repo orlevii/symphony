@@ -36,7 +36,7 @@ class Server:
         print(f'expected play time: {play_time.timestamp()}')
         for c in self.clients:
             self.sync_client(c, play_time)
-            sleep(0.25)
+            sleep(0.1)
         self.sock.close()
 
     def receive_connections(self):
@@ -48,6 +48,7 @@ class Server:
             sleep(0.25)
 
     def handle_client(self, client: socket.socket, data: bytes):
+        client.send(b'M')
         length = len(data)
         print(f'sending {length} bytes to client {client.getpeername()}')
         client.send(length.to_bytes(4, 'big'))

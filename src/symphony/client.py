@@ -23,6 +23,9 @@ class Client:
     def run(self):
         self.sock.connect((self.host, self.port))
         print('connected')
+        b = self.sock.recv(1)
+        while b != b'M':
+            b = self.sock.recv(1)
         payload_size_bytes = self.sock.recv(4)
         payload_size = int.from_bytes(payload_size_bytes, 'big')
         midi_data = self.sock.recv(payload_size)
