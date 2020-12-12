@@ -1,4 +1,3 @@
-import multiprocessing as mp
 import socket
 import sys
 from datetime import datetime
@@ -14,18 +13,20 @@ from .util import TimeUtil
 
 
 class Client:
-    def __init__(self, host, port):
+    def __init__(self, host, port, tracks: int):
         self.host = host
         self.port = port
+        self.tracks = tracks
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client = SocketWrapper(sock)
-        pygame.mixer.init()
+        pygame.mixer.init(size=-8)
         pygame.mixer.music.set_volume(0.8)
 
     def run(self):
         self.client.sock.connect((self.host, self.port))
         print('Connected')
-        file_name = self.client.recv_message().decode('utf-8')
+        print(f'Requesting {self.tracks} tracks')
+        self.client.send_message(self.tracks.to_bytes(4, 'big'))
         midi_data = self.client.recv_message()
         print(f'Got {len(midi_data)} bytes')
 
@@ -42,7 +43,8 @@ class Client:
             while pygame.mixer.music.get_busy():
                 sleep(1)
         except Exception as e:
-            print(f'Could not play {file_name}... {e}')
+            print(e)
+            sys.exit(-1)
 
     def sync(self):
         ntp_client = ntplib.NTPClient()
@@ -74,22 +76,7 @@ class Client:
 @click.option('--host', default='127.0.0.1')
 @click.option('--port', default=7777)
 @click.option('--tracks', default=1)
-def cli(tracks, **kwargs):
-    if tracks == 1:
-        c(kwargs)
-    else:
-        ps = []
-        for _ in range(tracks):
-            p = mp.Process(target=c,
-                           args=(kwargs,))
-            p.start()
-            ps.append(p)
-
-        for p in ps:
-            p.join()
-
-
-def c(kwargs):
+def cli(**kwargs):
     Client(**kwargs).run()
 
 

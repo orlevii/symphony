@@ -3,11 +3,20 @@ import os
 import socket
 import sys
 from datetime import datetime, timedelta
+from io import BytesIO
+from typing import List
 
 import click
+import python3_midi as midi
 
 from ._socket_wrapper import SocketWrapper
 from .util import TimeUtil
+
+
+class MidiFile:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.is_handled = False
 
 
 class Server:
@@ -19,8 +28,7 @@ class Server:
         self.server = SocketWrapper(sock)
         self.midi_path = midi_path
         self.clients = []
-        self.files = {}
-        self.ready_count = 0
+        self.files: List[MidiFile] = []
         self.sync_time = sync_time
 
     def run(self):
@@ -28,9 +36,6 @@ class Server:
         self.server.sock.listen()
         print(f'Server listening on: {self.host}:{self.port}')
         self.receive_connections()
-        if self.ready_count != len(self.files):
-            print('Something is wrong!')
-            sys.exit(-1)
 
         print('-----' * 10)
         print(f'Playing in {self.sync_time}s, syncing clients...')
@@ -43,20 +48,31 @@ class Server:
         self.server.close()
 
     def receive_connections(self):
-        for f_name, data in self.files.items():
+        to_handle = [f for f in self.files if not f.is_handled]
+
+        while any(to_handle):
+            print(f'[INFO] - {len(to_handle)} tracks are left!')
             client_sock, addr = self.server.sock.accept()
             client = SocketWrapper(client_sock)
             self.clients.append(client)
-            print('Connected by', addr)
-            self.handle_client(client, f_name, data)
+            self.handle_client(client, to_handle)
+            to_handle = [f for f in self.files if not f.is_handled]
 
-    def handle_client(self, client: SocketWrapper, file_name: str, data: bytes):
-        client.send_message(file_name.encode('utf-8'))
-        client.send_message(data)
+    def handle_client(self, client: SocketWrapper, to_handle: List[MidiFile]):
+        peer_name = self.__get_peer_name(client)
+        print(f'[{peer_name}] - Connected')
+        num_of_tracks = int.from_bytes(client.recv_message(), 'big')
+        print(f'[{peer_name}] - Requesting {num_of_tracks} tracks')
+
+        to_combine = to_handle[:num_of_tracks]
+        midi_payload = self.combine_midi_files(to_combine)
+        client.send_message(midi_payload)
+
         ready = client.recv_message()
         if ready == b'READY':
-            print(f'Client {client.sock.getpeername()} is ready')
-            self.ready_count += 1
+            print(f'[{peer_name}] - Client is ready')
+        else:
+            print('????')
 
     def load_files(self):
         print(f'Searching for midi files in {self.midi_path}')
@@ -65,12 +81,11 @@ class Server:
         for f_name in file_names:
             path = os.path.join(self.midi_path, f_name)
             with open(path, 'rb') as f:
-                self.files[f_name] = f.read()
+                self.files.append(MidiFile(f.read()))
 
-    @staticmethod
-    def sync_client(c: SocketWrapper, play_time: datetime):
-        pn = c.sock.getpeername()
-        peer_name = f'{pn[0]}:{pn[1]}'
+    @classmethod
+    def sync_client(cls, c: SocketWrapper, play_time: datetime):
+        peer_name = cls.__get_peer_name(c)
 
         play_time_bytes = TimeUtil.timestamp_to_bytes(play_time.timestamp())
         c.send_message(play_time_bytes)
@@ -82,6 +97,27 @@ class Server:
             sys.exit(-1)
 
         print(f'Done syncing client {peer_name}')
+
+    @staticmethod
+    def __get_peer_name(s: SocketWrapper):
+        pn = s.sock.getpeername()
+        return f'{pn[0]}:{pn[1]}'
+
+    @staticmethod
+    def combine_midi_files(to_combine: List[MidiFile]) -> bytes:
+        first = to_combine[0]
+        pattern = midi.read_midifile(BytesIO(first.data))
+        first.is_handled = True
+
+        for file in to_combine[1:]:
+            m = midi.read_midifile(BytesIO(file.data))
+            for track in m:
+                pattern.append(track)
+            file.is_handled = True
+
+        res = BytesIO()
+        midi.write_midifile(res, pattern)
+        return res.getvalue()
 
 
 @click.command()

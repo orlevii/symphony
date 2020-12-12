@@ -22,10 +22,18 @@ category = "main"
 optional = false
 python-versions = "*"
 
+[[package]]
+name = "python3-midi"
+version = "0.2.5"
+description = "Python MIDI API"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "e42a1e0ed465bb8355a8f8f4d896c330cf3cd10e00a1a62a26998f0ab242f519"
+content-hash = "3ceefbb08ec49b99bf13d82e97ac5720163e82f515f3699ae6811f335399bdbe"
 
 [metadata.files]
 click = [
@@ -79,4 +87,8 @@ pygame = [
     {file = "pygame-2.0.0-pp37-pypy37_pp73-manylinux2010_i686.whl", hash = "sha256:e8effa8b5a8d2bb9c07dccb18337b07174d4956516978a35350bc23e254189cc"},
     {file = "pygame-2.0.0-pp37-pypy37_pp73-manylinux2010_x86_64.whl", hash = "sha256:5a3f0f436174e95027c60a37f06d84d25d2275de3255fe85846baa47c0e36e6b"},
     {file = "pygame-2.0.0.tar.gz", hash = "sha256:63b038da116a643046181b02173fd894d87d2f85ecfd6aa7d5ece73c6ef501e9"},
+]
+python3-midi = [
+    {file = "python3_midi-0.2.5-py3-none-any.whl", hash = "sha256:34bb83c25a01a4f90f7f00277ce793883d208b2b7fea0b314348e89dbb9bb687"},
+    {file = "python3_midi-0.2.5.tar.gz", hash = "sha256:4e1f6b9c3d00363decd98b0497cb72ce1a59772e15d77ed9847dd85b0f0f32fd"},
 ]

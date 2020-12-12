@@ -234,12 +234,12 @@ class RecvThread(threading.Thread):
         global taskQueue, stopFlag
         while True:
             if stopFlag == True:
-                print("RecvThread Ended")
+                pass  # print("RecvThread Ended")
 
                 break
             rlist, wlist, elist = select.select([self.socket], [], [], 1);
             if len(rlist) != 0:
-                print("Received %d packets" % len(rlist))
+                pass  # print("Received %d packets" % len(rlist))
 
                 for tempSocket in rlist:
                     try:
@@ -259,7 +259,7 @@ class WorkThread(threading.Thread):
         global taskQueue, stopFlag
         while True:
             if stopFlag == True:
-                print("WorkThread Ended")
+                pass  # print("WorkThread Ended")
                 break
             try:
                 data, addr, recvTimestamp = taskQueue.get(timeout=1)
@@ -280,7 +280,7 @@ class WorkThread(threading.Thread):
                 sendPacket.recv_timestamp = recvTimestamp
                 sendPacket.tx_timestamp = system_to_ntp_time(time.time())
                 self.sock.sendto(sendPacket.to_data(), addr)
-                print("Sended to %s:%d" % (addr[0], addr[1]))
+                pass  # print("Sended to %s:%d" % (addr[0], addr[1]))
             except queue.Empty:
                 continue
 
@@ -290,7 +290,7 @@ def run(host='0.0.0.0', port=123):
     listenPort = port
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((listenIp, listenPort))
-    print("local socket: ", sock.getsockname())
+    pass  # print("local socket: ", sock.getsockname())
     recvThread = RecvThread(sock)
     recvThread.start()
     workThread = WorkThread(sock)
@@ -301,12 +301,12 @@ def run(host='0.0.0.0', port=123):
             time.sleep(0.5)
         except KeyboardInterrupt:
             global stopFlag
-            print("Exiting...")
+            pass  # print("Exiting...")
             stopFlag = True
             recvThread.join()
             workThread.join()
             # socket.close()
-            print("Exited")
+            pass  # print("Exited")
             break
 
 
