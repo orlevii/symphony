@@ -1,3 +1,4 @@
+import os
 import socket
 import sys
 from datetime import datetime
@@ -38,6 +39,7 @@ class Client:
         print('-----' * 2)
 
         self.sync()
+        self.handle_os()
 
         try:
             pygame.mixer.music.play()
@@ -80,6 +82,11 @@ class Client:
             sys.exit(-1)
         else:
             sleep(sleep_time)
+
+    @staticmethod
+    def handle_os():
+        if os.name == 'posix':
+            sleep(0.3)  # Not sure why it's needed...
 
 
 @click.command()
