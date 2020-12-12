@@ -1,0 +1,1 @@
+MICRO_SECONDS = 10 ** 6

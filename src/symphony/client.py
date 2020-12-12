@@ -2,12 +2,12 @@ import socket
 import sys
 from datetime import datetime
 from io import BytesIO
-from time import sleep
 
 import click
-import ntplib
 import pygame
+from symphony.time_sync.timesyncclient import TimeSyncClient
 
+from time import sleep
 from ._socket_wrapper import SocketWrapper
 from .util import TimeUtil
 
@@ -24,19 +24,21 @@ class Client:
 
     def run(self):
         self.client.sock.connect((self.host, self.port))
-        print('Connected')
+        print('Connected!')
         print(f'Requesting {self.tracks} tracks')
         self.client.send_message(self.tracks.to_bytes(4, 'big'))
         midi_data = self.client.recv_message()
-        print(f'Got {len(midi_data)} bytes')
+        print(f'Got {len(midi_data)} bytes of midi')
 
         midi_stream = BytesIO(midi_data)
         pygame.mixer.music.load(midi_stream)
 
         self.client.send_message(b'READY')
         print('READY!')
+        print('-----' * 2)
 
         self.sync()
+        sleep(0.3)
 
         try:
             pygame.mixer.music.play()
@@ -46,12 +48,21 @@ class Client:
             print(e)
             sys.exit(-1)
 
+    def minimize_ping(self):
+        attempts = []
+        ntp_client = TimeSyncClient(host=self.host,
+                                    port=self.port)
+        for i in range(10):
+            resp = ntp_client.request()
+            attempts.append(resp)
+
+        return min(attempts, key=lambda r: r.ping)
+
     def sync(self):
-        ntp_client = ntplib.NTPClient()
-        resp = ntp_client.request(host=self.host,
-                                  port=self.port,
-                                  version=3)
+        resp = self.minimize_ping()
         offset = resp.offset
+
+        print(f'Approx ping: ~{resp.ping * 1000}ms')
         print(f'Clock offset: {offset}')
 
         play_time_bytes = self.client.recv_message()

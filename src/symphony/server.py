@@ -129,7 +129,7 @@ class Server:
 @click.option('--midi-path', default='./midi')
 @click.option('--sync-time', default=5)
 def cli(**kwargs):
-    p = mp.Process(target=ntp_server, kwargs=kwargs)
+    p = mp.Process(target=time_sync_server, kwargs=kwargs)
     s = Server(**kwargs)
     try:
         p.start()
@@ -142,9 +142,9 @@ def cli(**kwargs):
             c.close()
 
 
-def ntp_server(host, port, **_):
-    from .ntp.server import run
-    run(host=host, port=port)
+def time_sync_server(host, port, **_):
+    from .time_sync.timesyncserver import TimeSyncServer
+    TimeSyncServer(host=host, port=port).run()
 
 
 def main():
