@@ -24,6 +24,8 @@ class Server:
         self.host = host
         self.port = port
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         sock.bind((host, port))
         self.server = SocketWrapper(sock)
         self.midi_path = midi_path
@@ -40,10 +42,11 @@ class Server:
         print('-----' * 10)
         print(f'Playing in {self.sync_time}s, syncing clients...')
         play_time = datetime.utcnow() + timedelta(seconds=self.sync_time)
-        print(f'expected play time: {play_time.timestamp()}')
+        print(f'Expected play time: {play_time.timestamp()}')
 
-        print(f'clients to sync: {len(self.clients)}')
+        print(f'Clients to sync: {len(self.clients)}')
         for c in self.clients:
+            print('-----' * 5)
             self.sync_client(c, play_time)
         self.server.close()
 
@@ -90,13 +93,13 @@ class Server:
         play_time_bytes = TimeUtil.timestamp_to_bytes(play_time.timestamp())
         c.send_message(play_time_bytes)
 
-        print(f'Syncing client {peer_name}. Waiting..')
+        print(f'[{peer_name}] - Syncing...')
         msg = c.recv_message()
         if msg != b'OK':
-            print(f'client sent {msg}. ???')
+            print(f'[{peer_name}] - ???? - Invalid ack - {msg}.')
             sys.exit(-1)
 
-        print(f'Done syncing client {peer_name}')
+        print(f'[{peer_name}] - Done!')
 
     @staticmethod
     def __get_peer_name(s: SocketWrapper):
@@ -131,7 +134,7 @@ def cli(**kwargs):
     try:
         p.start()
         s.run()
-        print('done')
+        print('----DONE!----')
         sys.exit(0)
     finally:
         p.terminate()
