@@ -38,7 +38,6 @@ class Client:
         print('-----' * 2)
 
         self.sync()
-        sleep(0.3)
 
         try:
             pygame.mixer.music.play()
