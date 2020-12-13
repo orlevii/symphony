@@ -14,8 +14,10 @@ from .util import TimeUtil
 
 
 class MidiFile:
-    def __init__(self, data: bytes):
+    def __init__(self, name: str, data: bytes):
+        self.name = name
         self.data = data
+        self.midi_file = midi.read_midifile(BytesIO(data))
         self.is_handled = False
 
 
@@ -84,7 +86,11 @@ class Server:
         for f_name in file_names:
             path = os.path.join(self.midi_path, f_name)
             with open(path, 'rb') as f:
-                self.files.append(MidiFile(f.read()))
+                try:
+                    self.files.append(MidiFile(name=f_name,
+                                               data=f.read()))
+                except Exception:
+                    raise TypeError(f'Invalid midi file {path}.')
 
     @classmethod
     def sync_client(cls, c: SocketWrapper, play_time: datetime):
@@ -113,8 +119,7 @@ class Server:
         first.is_handled = True
 
         for file in to_combine[1:]:
-            m = midi.read_midifile(BytesIO(file.data))
-            for track in m:
+            for track in file.midi_file:
                 pattern.append(track)
             file.is_handled = True
 

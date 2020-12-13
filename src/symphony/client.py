@@ -86,7 +86,7 @@ class Client:
     @staticmethod
     def handle_os():
         if os.name == 'posix':
-            sleep(0.3)  # Not sure why it's needed...
+            sleep(0.31)  # Not sure why it's needed...
 
 
 @click.command()
