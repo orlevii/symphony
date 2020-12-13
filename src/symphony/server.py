@@ -4,6 +4,7 @@ import socket
 import sys
 from datetime import datetime, timedelta
 from io import BytesIO
+from random import random
 from typing import List
 
 import click
@@ -22,7 +23,7 @@ class MidiFile:
 
 
 class Server:
-    def __init__(self, host, port, midi_path, sync_time):
+    def __init__(self, host, port, midi_path, sync_time, randomize):
         self.host = host
         self.port = port
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,6 +35,7 @@ class Server:
         self.clients = []
         self.files: List[MidiFile] = []
         self.sync_time = sync_time
+        self.randomize = randomize
 
     def run(self):
         self.load_files()
@@ -54,6 +56,8 @@ class Server:
 
     def receive_connections(self):
         to_handle = [f for f in self.files if not f.is_handled]
+        if self.randomize:
+            to_handle.sort(key=lambda _: random())
 
         while any(to_handle):
             print(f'[INFO] - {len(to_handle)} tracks are left!')
@@ -133,6 +137,7 @@ class Server:
 @click.option('--port', default=7777)
 @click.option('--midi-path', default='./midi')
 @click.option('--sync-time', default=5)
+@click.option('--randomize', is_flag=True)
 def cli(**kwargs):
     p = mp.Process(target=time_sync_server, kwargs=kwargs)
     s = Server(**kwargs)
